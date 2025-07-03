@@ -1,0 +1,65 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Setup Backend",
+			"type": "shell",
+			"command": "npm install",
+			"group": "build",
+			"options": {
+				"cwd": "${workspaceFolder}/backend"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Setup Frontend",
+			"type": "shell",
+			"command": "npm install",
+			"group": "build",
+			"options": {
+				"cwd": "${workspaceFolder}/frontend"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Setup All",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"Setup Backend",
+				"Setup Frontend"
+			]
+		},
+		{
+			"label": "Start Backend",
+			"type": "shell",
+			"command": "npm run dev",
+			"group": "build",
+			"isBackground": true,
+			"args": [],
+			"options": {
+				"cwd": "${workspaceFolder}/backend"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Start Frontend",
+			"type": "shell",
+			"command": "npm run dev",
+			"group": "build",
+			"isBackground": true,
+			"args": [],
+			"options": {
+				"cwd": "${workspaceFolder}/frontend"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Start All Services",
+			"dependsOrder": "parallel",
+			"dependsOn": [
+				"Start Backend",
+				"Start Frontend"
+			]
+		}
+	]
+}
