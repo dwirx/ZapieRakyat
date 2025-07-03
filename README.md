@@ -1,6 +1,8 @@
-# ZapieRakyat - Deploy Services Instantly
+# 🚀 ZapieRakyat - Advanced Service Deployment Platform
 
-ZapieRakyat adalah aplikasi deployment otomatis yang memungkinkan pengguna untuk meluncurkan layanan seperti n8n hanya dengan beberapa klik, tanpa perlu pengetahuan teknis.
+**Deploy production-ready services instantly without technical complexity!**
+
+ZapieRakyat adalah platform deployment service canggih yang memungkinkan Anda untuk deploy berbagai macam service seperti PostgreSQL, n8n, WAHA WhatsApp API, dan lainnya hanya dalam hitungan menit - tanpa perlu pengetahuan teknis mendalam!
 
 ## Struktur Proyek
 
