@@ -336,7 +336,7 @@ class DockerService {
   }
 
   // Generic deployment method using ServiceRegistry
-  async deployService(serviceName, containerName, templateName) {
+  async deployService(serviceName, containerName, templateName, credentials = {}) {
     try {
       const serviceConfig = serviceRegistry.getService(serviceName)
       if (!serviceConfig) {
@@ -368,7 +368,7 @@ class DockerService {
       const createOptions = {
         Image: serviceConfig.image,
         name: containerName,
-        Env: serviceConfig.getEnvironment(this.getLocalIP(), availablePort),
+        Env: serviceConfig.getEnvironment(this.getLocalIP(), availablePort, credentials),
         ExposedPorts: {
           [`${serviceConfig.internalPort}/tcp`]: {}
         },

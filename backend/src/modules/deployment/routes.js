@@ -49,7 +49,7 @@ router.get('/services/:serviceName/templates', (req, res) => {
 // Deploy a new service
 router.post('/', async (req, res) => {
   try {
-    const { serviceName, serviceType, template } = req.body
+    const { serviceName, serviceType, template, credentials } = req.body
     const io = req.app.get('io')
     const deploymentId = uuidv4()
 
@@ -106,7 +106,7 @@ router.post('/', async (req, res) => {
     emitProgress('🐳 Creating Docker volume for persistent data...', 'info')
     emitProgress('📥 Pulling Docker image (this may take a moment)...', 'info')
     
-    deploymentResult = await dockerService.deployService(serviceType, containerName, template)
+    deploymentResult = await dockerService.deployService(serviceType, containerName, template, credentials)
     
     emitProgress('🔌 Configuring network and port mappings...', 'info')
     emitProgress(`✅ ${serviceConfig.displayName} deployed successfully!`, 'success')

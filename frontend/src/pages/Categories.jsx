@@ -13,6 +13,7 @@ const Categories = () => {
   const iconMapping = {
     'n8n': <Workflow className="w-8 h-8" />,
     'waha': <Phone className="w-8 h-8" />,
+    'postgresql': <Database className="w-8 h-8" />,
     'postgres': <Database className="w-8 h-8" />,
     'nginx': <Globe className="w-8 h-8" />,
     'discord-bot': <MessageSquare className="w-8 h-8" />
@@ -41,6 +42,12 @@ const Categories = () => {
             name: 'WAHA',
             description: 'WhatsApp API - Connect WhatsApp to your applications',
             path: '/deploy/waha'
+          },
+          {
+            id: 'postgresql',
+            name: 'PostgreSQL',
+            description: 'Open source relational database',
+            path: '/deploy/postgresql'
           }
         ])
       } finally {

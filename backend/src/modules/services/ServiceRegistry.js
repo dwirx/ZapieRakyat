@@ -1,12 +1,15 @@
 // Service Registry - Central management for all services
+
 import n8nServiceConfig from './definitions/n8n.js'
 import wahaServiceConfig from './definitions/waha.js'
+import postgresqlServiceConfig from './definitions/postgresql.js'
 
 export class ServiceRegistry {
   constructor() {
     this.services = new Map()
     this.registerService(n8nServiceConfig)
     this.registerService(wahaServiceConfig)
+    this.registerService(postgresqlServiceConfig)
   }
 
   registerService(serviceConfig) {
