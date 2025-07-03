@@ -1,6 +1,6 @@
 import Docker from 'dockerode'
 import os from 'os'
-import serviceRegistry from './ServiceRegistry.js'
+import serviceRegistry from '../services/ServiceRegistry.js'
 
 class DockerService {
   constructor() {

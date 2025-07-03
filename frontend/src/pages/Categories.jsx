@@ -1,40 +1,55 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Workflow, Database, Globe, MessageSquare, Settings } from 'lucide-react'
+import { Workflow, Database, Globe, MessageSquare, Settings, Phone } from 'lucide-react'
+import axios from 'axios'
+import { api } from '../config/api'
 
 const Categories = () => {
-  const services = [
-    {
-      id: 'n8n',
-      name: 'n8n',
-      description: 'Workflow automation platform',
-      icon: <Workflow className="w-8 h-8" />,
-      path: '/deploy/n8n'
-    },
-    {
-      id: 'postgres',
-      name: 'PostgreSQL',
-      description: 'Powerful open source database',
-      icon: <Database className="w-8 h-8" />,
-      path: '/deploy/postgres',
-      disabled: true
-    },
-    {
-      id: 'nginx',
-      name: 'Nginx',
-      description: 'High-performance web server',
-      icon: <Globe className="w-8 h-8" />,
-      path: '/deploy/nginx',
-      disabled: true
-    },
-    {
-      id: 'discord-bot',
-      name: 'Discord Bot',
-      description: 'Custom Discord bot hosting',
-      icon: <MessageSquare className="w-8 h-8" />,
-      path: '/deploy/discord-bot',
-      disabled: true
+  const [services, setServices] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Icon mapping for services
+  const iconMapping = {
+    'n8n': <Workflow className="w-8 h-8" />,
+    'waha': <Phone className="w-8 h-8" />,
+    'postgres': <Database className="w-8 h-8" />,
+    'nginx': <Globe className="w-8 h-8" />,
+    'discord-bot': <MessageSquare className="w-8 h-8" />
+  }
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const response = await axios.get(`${api.baseURL}/api/deploy/services`)
+        if (response.data.success) {
+          setServices(response.data.services)
+        }
+      } catch (err) {
+        console.error('Error fetching services:', err)
+        setError('Failed to load services')
+        // Fallback to static data if backend is not available
+        setServices([
+          {
+            id: 'n8n',
+            name: 'n8n',
+            description: 'Workflow automation platform',
+            path: '/deploy/n8n'
+          },
+          {
+            id: 'waha',
+            name: 'WAHA',
+            description: 'WhatsApp API - Connect WhatsApp to your applications',
+            path: '/deploy/waha'
+          }
+        ])
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
+
+    fetchServices()
+  }, [])
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -59,6 +74,17 @@ const Categories = () => {
         </div>
       </div>
 
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="text-gray-600">Loading services...</div>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <div className="text-red-600 mb-4">{error}</div>
+          <div className="text-gray-600">Using fallback services</div>
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {services.map((service) => (
           <div key={service.id} className="relative">
@@ -75,7 +101,7 @@ const Categories = () => {
             >
               <div className="flex flex-col items-center text-center">
                 <div className="p-3 bg-blue-100 rounded-full mb-4 text-blue-600">
-                  {service.icon}
+                  {iconMapping[service.id] || <Settings className="w-8 h-8" />}
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   {service.name}

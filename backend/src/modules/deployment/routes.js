@@ -1,6 +1,6 @@
 import express from 'express'
 import { v4 as uuidv4 } from 'uuid'
-import DockerService from '../services/DockerService.js'
+import DockerService from './DockerService.js'
 import { serviceRegistry } from '../services/ServiceRegistry.js'
 
 const router = express.Router()
