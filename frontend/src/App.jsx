@@ -4,6 +4,7 @@ import Categories from './pages/Categories'
 import DeployN8n from './pages/DeployN8n'
 import DeployWaha from './pages/DeployWaha'
 import DeployPostgreSQL from './pages/DeployPostgreSQL'
+import DeployActivePieces from './pages/DeployActivePieces'
 import Services from './pages/Services'
 import DeploymentMonitor from './components/DeploymentMonitor'
 import SystemMonitor from './components/SystemMonitor'
@@ -27,6 +28,7 @@ function App() {
             <Route path="/deploy/n8n" element={<DeployN8n />} />
             <Route path="/deploy/waha" element={<DeployWaha />} />
             <Route path="/deploy/postgresql" element={<DeployPostgreSQL />} />
+            <Route path="/deploy/activepieces" element={<DeployActivePieces />} />
             <Route path="/services" element={<Services />} />
           </Routes>
           

@@ -440,6 +440,129 @@ class DockerService {
       throw new Error(`Failed to deploy ${serviceName}: ${error.message}`)
     }
   }
+
+  async deployActivePieces(containerName, templateConfig) {
+    try {
+      // Find available port from the range
+      const portRange = [8080, 8081, 8082, 8083, 8084, 8085, 8086, 8087, 8088, 8089]
+      const availablePort = await this.findAvailablePort(portRange)
+      
+      if (!availablePort) {
+        throw new Error('No available ports found for ActivePieces deployment')
+      }
+
+      // Create volume for persistent data
+      const volumeName = `${containerName}_data`
+      
+      try {
+        await this.docker.createVolume({ Name: volumeName })
+        console.log(`✅ Created volume: ${volumeName}`)
+      } catch (error) {
+        if (error.statusCode === 409) {
+          console.log(`📁 Volume ${volumeName} already exists`)
+        } else {
+          throw error
+        }
+      }
+
+      // Set dynamic frontend URL
+      const frontendUrl = `http://${this.getLocalIP()}:${availablePort}`
+      
+      // Prepare environment variables
+      const environment = [
+        'AP_QUEUE_MODE=MEMORY',
+        'AP_DB_TYPE=SQLITE3',
+        `AP_FRONTEND_URL=${frontendUrl}`,
+        'AP_EXECUTION_MODE=UNSANDBOXED',
+        'AP_SIGN_UP_ENABLED=true',
+        'AP_TELEMETRY_ENABLED=false',
+        'AP_LOG_LEVEL=INFO',
+        'AP_ENVIRONMENT=prod'
+      ]
+
+      // Add custom environment variables from template
+      if (templateConfig.environment) {
+        templateConfig.environment.forEach(env => {
+          if (env.name !== 'AP_FRONTEND_URL') { // Don't override dynamic URL
+            environment.push(`${env.name}=${env.value}`)
+          }
+        })
+      }
+
+      const createOptions = {
+        Image: 'activepieces/activepieces:latest',
+        name: containerName,
+        Env: environment,
+        HostConfig: {
+          PortBindings: {
+            '80/tcp': [{ HostPort: availablePort.toString() }]
+          },
+          Binds: [
+            `${volumeName}:/root/.activepieces`
+          ],
+          RestartPolicy: {
+            Name: templateConfig.restart_policy || 'unless-stopped'
+          }
+        },
+        ExposedPorts: {
+          '80/tcp': {}
+        },
+        Labels: {
+          'zapie.managed': 'true',
+          'zapie.service': 'activepieces',
+          'zapie.template': templateConfig.template || 'basic',
+          'zapie.port': availablePort.toString(),
+          'zapie.volume': volumeName,
+          'zapie.created': new Date().toISOString()
+        },
+        Healthcheck: {
+          Test: ['CMD-SHELL', 'curl -f http://localhost:80/api/v1/flags || exit 1'],
+          Interval: 30000000000, // 30 seconds in nanoseconds
+          Timeout: 10000000000,   // 10 seconds
+          Retries: 3,
+          StartPeriod: 60000000000 // 60 seconds
+        }
+      }
+
+      // Pull image first
+      await this.pullImageIfNotExists('activepieces/activepieces:latest')
+
+      // Create and start container
+      const container = await this.docker.createContainer(createOptions)
+      await container.start()
+
+      console.log(`✅ ActivePieces deployed successfully on port ${availablePort}`)
+
+      const containerInfo = await container.inspect()
+      
+      return {
+        containerId: containerInfo.Id,
+        containerName: containerName,
+        url: frontendUrl,
+        port: availablePort,
+        volume: volumeName,
+        credentials: {
+          type: 'web_interface',
+          message: 'Access ActivePieces through the web interface. Create your account on first visit.',
+          url: frontendUrl,
+          notes: [
+            'First time setup will ask you to create an admin account',
+            'ActivePieces is an open-source automation platform',
+            'You can create workflows, automations, and integrations',
+            'Documentation: https://activepieces.com/docs'
+          ]
+        },
+        service: {
+          name: 'ActivePieces',
+          category: 'Automation',
+          template: templateConfig.template || 'basic'
+        }
+      }
+    } catch (error) {
+      console.error('ActivePieces deployment failed:', error)
+      throw new Error(`Failed to deploy ActivePieces: ${error.message}`)
+    }
+  }
 }
 
 export default DockerService

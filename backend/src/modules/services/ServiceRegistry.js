@@ -3,6 +3,7 @@
 import n8nServiceConfig from './definitions/n8n.js'
 import wahaServiceConfig from './definitions/waha.js'
 import postgresqlServiceConfig from './definitions/postgresql.js'
+import activepiecesServiceConfig from './definitions/activepieces.js'
 
 export class ServiceRegistry {
   constructor() {
@@ -10,6 +11,7 @@ export class ServiceRegistry {
     this.registerService(n8nServiceConfig)
     this.registerService(wahaServiceConfig)
     this.registerService(postgresqlServiceConfig)
+    this.registerService(activepiecesServiceConfig)
   }
 
   registerService(serviceConfig) {

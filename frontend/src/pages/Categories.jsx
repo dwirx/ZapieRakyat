@@ -21,6 +21,7 @@ const Categories = () => {
     'waha': { icon: <Phone className="w-8 h-8" />, color: 'bg-green-100 text-green-600', gradient: 'from-green-500 to-emerald-600' },
     'postgresql': { icon: <Database className="w-8 h-8" />, color: 'bg-blue-100 text-blue-600', gradient: 'from-blue-500 to-cyan-600' },
     'postgres': { icon: <Database className="w-8 h-8" />, color: 'bg-blue-100 text-blue-600', gradient: 'from-blue-500 to-cyan-600' },
+    'activepieces': { icon: <Zap className="w-8 h-8" />, color: 'bg-yellow-100 text-yellow-600', gradient: 'from-yellow-500 to-orange-600' },
     'nginx': { icon: <Globe className="w-8 h-8" />, color: 'bg-orange-100 text-orange-600', gradient: 'from-orange-500 to-red-600' },
     'discord-bot': { icon: <MessageSquare className="w-8 h-8" />, color: 'bg-indigo-100 text-indigo-600', gradient: 'from-indigo-500 to-purple-600' }
   }
@@ -74,14 +75,23 @@ const Categories = () => {
             path: '/deploy/postgresql',
             category: 'Database',
             difficulty: 'Intermediate',
-            deployTime: '1-2 min',
+            deployTime: '1-2 min'
+          },
+          {
+            id: 'activepieces',
+            name: 'ActivePieces',
+            description: 'Open-source business automation platform for building workflows',
+            path: '/deploy/activepieces',
+            category: 'Automation',
+            difficulty: 'Beginner',
+            deployTime: '2-3 min',
             isNew: true
           }
         ]
         setServices(fallbackServices)
         setFeaturedService({
-          ...fallbackServices[2],
-          features: ['Custom Credentials', 'Multiple Templates', 'Persistent Storage', 'Real-time Monitoring']
+          ...fallbackServices[3], // ActivePieces as featured
+          features: ['Visual Workflow Builder', 'Multiple Templates', 'Integrations Hub', 'Real-time Automation']
         })
       } finally {
         setLoading(false)

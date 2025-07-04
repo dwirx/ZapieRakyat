@@ -143,4 +143,60 @@ router.post('/', async (req, res) => {
   }
 })
 
+// Deploy ActivePieces
+router.post('/activepieces', async (req, res) => {
+  try {
+    const { containerName, template = 'basic' } = req.body
+
+    if (!containerName) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'Container name is required'
+      })
+    }
+
+    // Get service configuration
+    const activepiecesConfig = serviceRegistry.getService('ActivePieces')
+    if (!activepiecesConfig) {
+      return res.status(404).json({
+        error: 'Service not found',
+        message: 'ActivePieces service configuration not found'
+      })
+    }
+
+    // Get template configuration
+    const templateConfigBase = activepiecesConfig.templates[template]
+    if (!templateConfigBase) {
+      return res.status(400).json({
+        error: 'Invalid template',
+        message: `Template '${template}' not found`
+      })
+    }
+
+    // Add template info (create new object to avoid mutation)
+    const templateConfig = {
+      ...templateConfigBase,
+      template: template
+    }
+
+    console.log(`🚀 Deploying ActivePieces with template: ${template}`)
+
+    // Deploy using DockerService
+    const result = await dockerService.deployActivePieces(containerName, templateConfig)
+
+    res.json({
+      success: true,
+      message: 'ActivePieces deployed successfully',
+      ...result
+    })
+
+  } catch (error) {
+    console.error('ActivePieces deployment failed:', error)
+    res.status(500).json({
+      error: 'Deployment failed',
+      message: error.message
+    })
+  }
+})
+
 export default router
