@@ -89,6 +89,26 @@ export const SocketProvider = ({ children }) => {
       }
     })
 
+    // Service action events (for real-time progress updates)
+    newSocket.on('service-action', (data) => {
+      console.log('🔄 Service action update:', data)
+      
+      // You can add state management here if needed
+      // For now, we'll just log the progress
+      
+      // Optionally trigger notifications for major status changes
+      if (data.status === 'completed') {
+        // Service action completed successfully
+        console.log(`✅ ${data.action} completed for container ${data.containerId}`)
+      } else if (data.status === 'failed') {
+        // Service action failed
+        console.error(`❌ ${data.action} failed for container ${data.containerId}: ${data.message}`)
+      } else if (data.status === 'in-progress') {
+        // Service action in progress
+        console.log(`🔄 ${data.action} in progress for container ${data.containerId}`)
+      }
+    })
+
     setSocket(newSocket)
 
     // Request notification permission

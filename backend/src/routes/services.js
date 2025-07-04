@@ -63,14 +63,54 @@ router.get('/:containerId', async (req, res) => {
 router.post('/:containerId/stop', async (req, res) => {
   try {
     const { containerId } = req.params
+    
+    // Emit real-time update
+    const io = req.app.get('io')
+    if (io) {
+      io.emit('service-action', {
+        containerId,
+        action: 'stopping',
+        status: 'in-progress',
+        message: 'Stopping container...',
+        timestamp: new Date().toISOString()
+      })
+    }
+    
     await dockerService.stopService(containerId)
+    
+    // Check final status
+    const finalStatus = await dockerService.getServiceDetails(containerId)
+    
+    if (io) {
+      io.emit('service-action', {
+        containerId,
+        action: 'stop',
+        status: 'completed',
+        message: 'Container stopped successfully',
+        finalState: finalStatus,
+        timestamp: new Date().toISOString()
+      })
+    }
     
     res.json({
       success: true,
-      message: 'Service stopped successfully'
+      message: 'Service stopped successfully',
+      service: finalStatus
     })
   } catch (error) {
     console.error('Error stopping service:', error)
+    
+    const io = req.app.get('io')
+    if (io) {
+      io.emit('service-action', {
+        containerId: req.params.containerId,
+        action: 'stop',
+        status: 'failed',
+        message: `Failed to stop: ${error.message}`,
+        timestamp: new Date().toISOString()
+      })
+    }
+    
     res.status(500).json({
       error: 'Failed to stop service',
       message: error.message
@@ -82,14 +122,57 @@ router.post('/:containerId/stop', async (req, res) => {
 router.post('/:containerId/start', async (req, res) => {
   try {
     const { containerId } = req.params
+    
+    // Emit real-time update
+    const io = req.app.get('io')
+    if (io) {
+      io.emit('service-action', {
+        containerId,
+        action: 'starting',
+        status: 'in-progress',
+        message: 'Starting container...',
+        timestamp: new Date().toISOString()
+      })
+    }
+    
     await dockerService.startService(containerId)
+    
+    // Wait a moment for container to initialize
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
+    // Check final status
+    const finalStatus = await dockerService.getServiceDetails(containerId)
+    
+    if (io) {
+      io.emit('service-action', {
+        containerId,
+        action: 'start',
+        status: 'completed',
+        message: 'Container started successfully',
+        finalState: finalStatus,
+        timestamp: new Date().toISOString()
+      })
+    }
     
     res.json({
       success: true,
-      message: 'Service started successfully'
+      message: 'Service started successfully',
+      service: finalStatus
     })
   } catch (error) {
     console.error('Error starting service:', error)
+    
+    const io = req.app.get('io')
+    if (io) {
+      io.emit('service-action', {
+        containerId: req.params.containerId,
+        action: 'start',
+        status: 'failed',
+        message: `Failed to start: ${error.message}`,
+        timestamp: new Date().toISOString()
+      })
+    }
+    
     res.status(500).json({
       error: 'Failed to start service',
       message: error.message
@@ -101,14 +184,57 @@ router.post('/:containerId/start', async (req, res) => {
 router.post('/:containerId/restart', async (req, res) => {
   try {
     const { containerId } = req.params
+    
+    // Emit real-time update
+    const io = req.app.get('io')
+    if (io) {
+      io.emit('service-action', {
+        containerId,
+        action: 'restarting',
+        status: 'in-progress',
+        message: 'Restarting container...',
+        timestamp: new Date().toISOString()
+      })
+    }
+    
     await dockerService.restartService(containerId)
+    
+    // Wait a moment for container to initialize after restart
+    await new Promise(resolve => setTimeout(resolve, 3000))
+    
+    // Check final status
+    const finalStatus = await dockerService.getServiceDetails(containerId)
+    
+    if (io) {
+      io.emit('service-action', {
+        containerId,
+        action: 'restart',
+        status: 'completed',
+        message: 'Container restarted successfully',
+        finalState: finalStatus,
+        timestamp: new Date().toISOString()
+      })
+    }
     
     res.json({
       success: true,
-      message: 'Service restarted successfully'
+      message: 'Service restarted successfully',
+      service: finalStatus
     })
   } catch (error) {
     console.error('Error restarting service:', error)
+    
+    const io = req.app.get('io')
+    if (io) {
+      io.emit('service-action', {
+        containerId: req.params.containerId,
+        action: 'restart',
+        status: 'failed',
+        message: `Failed to restart: ${error.message}`,
+        timestamp: new Date().toISOString()
+      })
+    }
+    
     res.status(500).json({
       error: 'Failed to restart service',
       message: error.message

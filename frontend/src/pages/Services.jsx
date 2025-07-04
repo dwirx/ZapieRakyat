@@ -249,16 +249,87 @@ const Services = () => {
 
   const handleAction = async (serviceId, action, serviceName) => {
     setActionLoading(`${serviceId}-${action}`)
+    
+    // Show initial progress notification
+    const progressMessages = {
+      'start': `Starting "${serviceName}"...`,
+      'stop': `Stopping "${serviceName}"...`,
+      'restart': `Restarting "${serviceName}"...`,
+      'remove': `Removing "${serviceName}"...`
+    }
+    
+    addNotification(progressMessages[action] || `Processing "${serviceName}"...`, 'info')
+    
     try {
       if (action === 'stop') {
         await axios.post(`${api.endpoints.services}/${serviceId}/stop`)
-        addNotification(`Service "${serviceName}" stopped successfully`, 'success')
+        addNotification(`✅ Service "${serviceName}" stopped successfully`, 'success')
+        
+        // Wait a moment then refresh to show updated status
+        setTimeout(() => {
+          fetchServices()
+        }, 1000)
+        
       } else if (action === 'start') {
         await axios.post(`${api.endpoints.services}/${serviceId}/start`)
-        addNotification(`Service "${serviceName}" started successfully`, 'success')
+        addNotification(`✅ Service "${serviceName}" started successfully`, 'success')
+        
+        // For start, we need to wait a bit longer for container to be fully ready
+        addNotification(`🔄 Waiting for "${serviceName}" to be ready...`, 'info')
+        
+        // Poll service status until it's fully running
+        let attempts = 0
+        const maxAttempts = 10
+        
+        const checkStatus = async () => {
+          try {
+            const response = await axios.get(`${api.endpoints.services}/${serviceId}`)
+            const service = response.data.service
+            
+            if (service && (service.status.includes('Up') || service.status.includes('running'))) {
+              addNotification(`🎉 Service "${serviceName}" is now fully running!`, 'success')
+              fetchServices()
+              return true
+            }
+            
+            attempts++
+            if (attempts < maxAttempts) {
+              setTimeout(checkStatus, 2000) // Check again in 2 seconds
+            } else {
+              addNotification(`⚠️ Service "${serviceName}" started but may still be initializing`, 'warning')
+              fetchServices()
+            }
+          } catch (error) {
+            console.warn('Status check failed:', error)
+            fetchServices()
+          }
+        }
+        
+        setTimeout(checkStatus, 3000) // Start checking after 3 seconds
+        
       } else if (action === 'restart') {
         await axios.post(`${api.endpoints.services}/${serviceId}/restart`)
-        addNotification(`Service "${serviceName}" restarted successfully`, 'success')
+        addNotification(`✅ Service "${serviceName}" restart initiated`, 'success')
+        addNotification(`🔄 Waiting for "${serviceName}" to restart...`, 'info')
+        
+        // For restart, wait and then check status
+        setTimeout(async () => {
+          try {
+            const response = await axios.get(`${api.endpoints.services}/${serviceId}`)
+            const service = response.data.service
+            
+            if (service && (service.status.includes('Up') || service.status.includes('running'))) {
+              addNotification(`🎉 Service "${serviceName}" restarted successfully!`, 'success')
+            } else {
+              addNotification(`⚠️ Service "${serviceName}" restart in progress...`, 'warning')
+            }
+            fetchServices()
+          } catch (error) {
+            console.warn('Restart status check failed:', error)
+            fetchServices()
+          }
+        }, 5000)
+        
       } else if (action === 'remove') {
         const confirmMessage = `Are you sure you want to remove "${serviceName}"?\n\nThis action cannot be undone.`
         
@@ -272,19 +343,22 @@ const Services = () => {
           await axios.delete(`${api.endpoints.services}/${serviceId}?keepData=${keepDataChoice}`)
           
           if (keepDataChoice) {
-            addNotification(`Service "${serviceName}" removed but data preserved`, 'success')
+            addNotification(`✅ Service "${serviceName}" removed but data preserved`, 'success')
           } else {
-            addNotification(`Service "${serviceName}" and all data removed permanently`, 'success')
+            addNotification(`✅ Service "${serviceName}" and all data removed permanently`, 'success')
           }
+          
+          fetchServices()
         } else {
           setActionLoading(null)
           return
         }
       }
-      await fetchServices()
+      
     } catch (error) {
       console.error(`Failed to ${action} service:`, error)
-      addNotification(`Failed to ${action} service: ${error.response?.data?.message || error.message}`, 'error')
+      addNotification(`❌ Failed to ${action} service: ${error.response?.data?.message || error.message}`, 'error')
+      fetchServices() // Refresh anyway to show current status
     } finally {
       setActionLoading(null)
     }
@@ -613,11 +687,16 @@ const Services = () => {
                         className="inline-flex items-center px-3 py-2 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:bg-gray-400 transition-colors"
                       >
                         {actionLoading === `${service.id}-stop` ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            <span className="text-xs">Stopping...</span>
+                          </>
                         ) : (
-                          <Square className="w-4 h-4 mr-2" />
+                          <>
+                            <Square className="w-4 h-4 mr-2" />
+                            Stop
+                          </>
                         )}
-                        Stop
                       </button>
                     ) : (
                       /* Show Start button if container is stopped */
@@ -627,11 +706,16 @@ const Services = () => {
                         className="inline-flex items-center px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 transition-colors"
                       >
                         {actionLoading === `${service.id}-start` ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            <span className="text-xs">Starting...</span>
+                          </>
                         ) : (
-                          <Play className="w-4 h-4 mr-2" />
+                          <>
+                            <Play className="w-4 h-4 mr-2" />
+                            Start
+                          </>
                         )}
-                        Start
                       </button>
                     )}
                     
@@ -641,11 +725,16 @@ const Services = () => {
                       className="inline-flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                     >
                       {actionLoading === `${service.id}-restart` ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          <span className="text-xs">Restarting...</span>
+                        </>
                       ) : (
-                        <RotateCw className="w-4 h-4 mr-2" />
+                        <>
+                          <RotateCw className="w-4 h-4 mr-2" />
+                          Restart
+                        </>
                       )}
-                      Restart
                     </button>
                     
                     <button
@@ -681,11 +770,16 @@ const Services = () => {
                       className="inline-flex items-center px-3 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400 transition-colors ml-auto"
                     >
                       {actionLoading === `${service.id}-remove` ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          <span className="text-xs">Removing...</span>
+                        </>
                       ) : (
-                        <Trash2 className="w-4 h-4 mr-2" />
+                        <>
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Remove
+                        </>
                       )}
-                      Remove
                     </button>
                   </div>
                 </div>
