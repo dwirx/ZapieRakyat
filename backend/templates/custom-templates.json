@@ -1,0 +1,90 @@
+{
+  "templates": [
+    {
+      "id": "postgres-basic",
+      "name": "PostgreSQL Basic",
+      "description": "Basic PostgreSQL database server",
+      "category": "database",
+      "dockerImage": "postgres:14",
+      "ports": [
+        "5432:5432"
+      ],
+      "environment": [
+        "POSTGRES_DB=mydb",
+        "POSTGRES_USER=admin",
+        "POSTGRES_PASSWORD=changeme"
+      ],
+      "volumes": [
+        "/data/postgres:/var/lib/postgresql/data"
+      ],
+      "commands": [],
+      "tags": [
+        "database",
+        "postgresql",
+        "sql"
+      ],
+      "isPublic": true,
+      "isFavorite": false,
+      "requirements": {
+        "minMemory": 512,
+        "minCpu": 0.5,
+        "minDisk": 2
+      },
+      "createdAt": "2025-07-04T06:36:30.561Z",
+      "createdBy": "system"
+    },
+    {
+      "id": "nginx-web",
+      "name": "Nginx Web Server",
+      "description": "High performance web server and reverse proxy",
+      "category": "web",
+      "dockerImage": "nginx:alpine",
+      "ports": [
+        "80:80",
+        "443:443"
+      ],
+      "environment": [],
+      "volumes": [
+        "/data/nginx/html:/usr/share/nginx/html",
+        "/data/nginx/conf:/etc/nginx/conf.d"
+      ],
+      "commands": [],
+      "tags": [
+        "web",
+        "nginx",
+        "proxy"
+      ],
+      "isPublic": true,
+      "isFavorite": false,
+      "requirements": {
+        "minMemory": 256,
+        "minCpu": 0.25,
+        "minDisk": 1
+      },
+      "createdAt": "2025-07-04T06:36:30.561Z",
+      "createdBy": "system"
+    },
+    {
+      "id": "template-1751611674395-489uajcfw",
+      "name": "Redis Cache",
+      "description": "Redis in-memory data store",
+      "category": "database",
+      "dockerImage": "redis:7-alpine",
+      "ports": [
+        "6379:6379"
+      ],
+      "environment": [],
+      "volumes": [
+        "/data/redis:/data"
+      ],
+      "tags": [
+        "database",
+        "cache",
+        "redis"
+      ],
+      "createdAt": "2025-07-04T06:47:54.395Z",
+      "updatedAt": "2025-07-04T06:47:54.395Z"
+    }
+  ],
+  "lastUpdated": "2025-07-04T06:47:54.395Z"
+}

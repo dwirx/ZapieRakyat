@@ -4,10 +4,16 @@ import {
   ArrowLeft, RefreshCw, Play, Square, Trash2, ExternalLink, Terminal, 
   Database, Activity, RotateCw, Eye, EyeOff, Download, Copy, 
   Clock, Cpu, HardDrive, Globe, AlertCircle, CheckCircle,
-  TrendingUp, PieChart, Settings, Filter, Search, Plus
+  TrendingUp, PieChart, Settings, Filter, Search, Plus,
+  Layers, Bell, BarChart3, Archive, Shield, FileText
 } from 'lucide-react'
 import axios from 'axios'
 import { api } from '../config/api'
+import BulkOperationsManager from '../components/BulkOperationsManager'
+import ServiceHealthAlerts from '../components/ServiceHealthAlerts'
+import ResourceUsageAnalytics from '../components/ResourceUsageAnalytics'
+import BackupManager from '../components/BackupManager'
+import ServiceTemplatesManager from '../components/ServiceTemplatesManager'
 
 const Services = () => {
   const [services, setServices] = useState([])
@@ -21,6 +27,14 @@ const Services = () => {
   const [statusFilter, setStatusFilter] = useState('all')
   const [serviceStats, setServiceStats] = useState({})
   const [notifications, setNotifications] = useState([])
+  
+  // New state for advanced features
+  const [showBulkOperations, setShowBulkOperations] = useState(false)
+  const [showHealthAlerts, setShowHealthAlerts] = useState(false)
+  const [showAnalytics, setShowAnalytics] = useState(false)
+  const [showTemplatesManager, setShowTemplatesManager] = useState(false)
+  const [selectedServiceForBackup, setSelectedServiceForBackup] = useState(null)
+  
   const autoRefreshInterval = useRef(null)
 
   const fetchServices = async (showNotification = false) => {
@@ -288,6 +302,43 @@ const Services = () => {
             <p className="text-gray-600">Monitor and manage your deployed services</p>
           </div>
           <div className="flex items-center space-x-3">
+            {/* Advanced Feature Buttons */}
+            <button
+              onClick={() => setShowBulkOperations(true)}
+              className="inline-flex items-center px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+              title="Bulk Operations"
+            >
+              <Layers className="w-4 h-4 mr-1" />
+              Bulk Ops
+            </button>
+            
+            <button
+              onClick={() => setShowHealthAlerts(true)}
+              className="inline-flex items-center px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+              title="Health Alerts"
+            >
+              <Bell className="w-4 h-4 mr-1" />
+              Alerts
+            </button>
+            
+            <button
+              onClick={() => setShowAnalytics(true)}
+              className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+              title="Analytics"
+            >
+              <BarChart3 className="w-4 h-4 mr-1" />
+              Analytics
+            </button>
+            
+            <button
+              onClick={() => setShowTemplatesManager(true)}
+              className="inline-flex items-center px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm"
+              title="Template Manager"
+            >
+              <FileText className="w-4 h-4 mr-1" />
+              Templates
+            </button>
+            
             <label className="flex items-center space-x-2">
               <input
                 type="checkbox"
@@ -561,6 +612,15 @@ const Services = () => {
                       {showLogs[service.id] ? 'Hide Logs' : 'Show Logs'}
                     </button>
                     
+                    <button
+                      onClick={() => setSelectedServiceForBackup({ id: service.id, name: serviceName })}
+                      className="inline-flex items-center px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                      title="Backup & Restore"
+                    >
+                      <Archive className="w-4 h-4 mr-2" />
+                      Backup
+                    </button>
+                    
                     {showLogs[service.id] && serviceLogs[service.id] && (
                       <button
                         onClick={() => downloadLogs(service.id, serviceName)}
@@ -624,6 +684,43 @@ const Services = () => {
             )
           })}
         </div>
+      )}
+      
+      {/* Advanced Feature Modals */}
+      {showBulkOperations && (
+        <BulkOperationsManager
+          services={services}
+          onRefresh={() => fetchServices(true)}
+          onClose={() => setShowBulkOperations(false)}
+        />
+      )}
+      
+      {showHealthAlerts && (
+        <ServiceHealthAlerts
+          services={services}
+          onClose={() => setShowHealthAlerts(false)}
+        />
+      )}
+      
+      {showAnalytics && (
+        <ResourceUsageAnalytics
+          services={services}
+          onClose={() => setShowAnalytics(false)}
+        />
+      )}
+      
+      {showTemplatesManager && (
+        <ServiceTemplatesManager
+          onClose={() => setShowTemplatesManager(false)}
+        />
+      )}
+      
+      {selectedServiceForBackup && (
+        <BackupManager
+          serviceId={selectedServiceForBackup.id}
+          serviceName={selectedServiceForBackup.name}
+          onClose={() => setSelectedServiceForBackup(null)}
+        />
       )}
     </div>
   )

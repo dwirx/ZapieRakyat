@@ -9,6 +9,7 @@ import os from 'os'
 import appConfig from './config/app.js'
 import { deploymentRoutes } from './modules/deployment/index.js'
 import servicesRoutes from './routes/services.js'
+import templatesRoutes from './routes/templates.js'
 
 dotenv.config()
 
@@ -82,6 +83,7 @@ app.get('/api/health', async (req, res) => {
 
 app.use('/api/deploy', deploymentRoutes)
 app.use('/api/services', servicesRoutes)
+app.use('/api/templates', templatesRoutes)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

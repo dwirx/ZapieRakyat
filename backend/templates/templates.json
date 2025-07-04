@@ -1,0 +1,135 @@
+[
+  {
+    "id": "postgresql-basic",
+    "name": "PostgreSQL Basic",
+    "description": "Basic PostgreSQL database server",
+    "category": "database",
+    "dockerImage": "postgres:14",
+    "ports": [
+      "5432:5432"
+    ],
+    "environment": [
+      "POSTGRES_DB=mydb",
+      "POSTGRES_USER=admin",
+      "POSTGRES_PASSWORD=changeme"
+    ],
+    "volumes": [
+      "/var/lib/postgresql/data"
+    ],
+    "commands": [],
+    "tags": [
+      "database",
+      "postgresql",
+      "sql"
+    ],
+    "isPublic": true,
+    "isFavorite": false,
+    "requirements": {
+      "minMemory": 512,
+      "minCpu": 0.5,
+      "minDisk": 5
+    },
+    "createdAt": "2025-07-03T21:58:31.551Z",
+    "author": "ZapieRakyat"
+  },
+  {
+    "id": "n8n-basic",
+    "name": "n8n Automation Basic",
+    "description": "n8n workflow automation platform",
+    "category": "automation",
+    "dockerImage": "n8nio/n8n:latest",
+    "ports": [
+      "5678:5678"
+    ],
+    "environment": [
+      "DB_TYPE=sqlite",
+      "N8N_BASIC_AUTH_ACTIVE=true",
+      "N8N_BASIC_AUTH_USER=admin",
+      "N8N_BASIC_AUTH_PASSWORD=changeme"
+    ],
+    "volumes": [
+      "/home/node/.n8n"
+    ],
+    "commands": [],
+    "tags": [
+      "automation",
+      "workflow",
+      "n8n"
+    ],
+    "isPublic": true,
+    "isFavorite": false,
+    "requirements": {
+      "minMemory": 512,
+      "minCpu": 0.5,
+      "minDisk": 2
+    },
+    "createdAt": "2025-07-03T21:58:31.551Z",
+    "author": "ZapieRakyat"
+  },
+  {
+    "id": "nginx-web",
+    "name": "Nginx Web Server",
+    "description": "High-performance web server and reverse proxy",
+    "category": "web",
+    "dockerImage": "nginx:alpine",
+    "ports": [
+      "80:80",
+      "443:443"
+    ],
+    "environment": [],
+    "volumes": [
+      "/usr/share/nginx/html",
+      "/etc/nginx/conf.d"
+    ],
+    "commands": [],
+    "tags": [
+      "web",
+      "nginx",
+      "proxy",
+      "server"
+    ],
+    "isPublic": true,
+    "isFavorite": false,
+    "requirements": {
+      "minMemory": 256,
+      "minCpu": 0.25,
+      "minDisk": 1
+    },
+    "createdAt": "2025-07-03T21:58:31.551Z",
+    "author": "ZapieRakyat"
+  },
+  {
+    "id": "redis-cache",
+    "name": "Redis Cache",
+    "description": "In-memory data structure store",
+    "category": "database",
+    "dockerImage": "redis:alpine",
+    "ports": [
+      "6379:6379"
+    ],
+    "environment": [],
+    "volumes": [
+      "/data"
+    ],
+    "commands": [
+      "redis-server",
+      "--appendonly",
+      "yes"
+    ],
+    "tags": [
+      "cache",
+      "redis",
+      "database",
+      "memory"
+    ],
+    "isPublic": true,
+    "isFavorite": false,
+    "requirements": {
+      "minMemory": 256,
+      "minCpu": 0.25,
+      "minDisk": 1
+    },
+    "createdAt": "2025-07-03T21:58:31.551Z",
+    "author": "ZapieRakyat"
+  }
+]
