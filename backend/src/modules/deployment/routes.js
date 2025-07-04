@@ -83,8 +83,6 @@ router.post('/', async (req, res) => {
       })
     }
 
-    emitProgress('🚀 Starting deployment process...', 'info')
-
     // Sanitize service name
     const sanitizedName = serviceName
       .toLowerCase()
@@ -94,22 +92,20 @@ router.post('/', async (req, res) => {
 
     const containerName = `zapie-${serviceType}-${sanitizedName}-${uuidv4().split('-')[0]}`
     
-    emitProgress('🔍 Validating service configuration...', 'info')
-    
     // Get template configuration from service registry
     const serviceConfig = serviceRegistry.getService(serviceType)
     const templateConfig = { ...serviceConfig.templates[template], name: template }
 
     let deploymentResult
 
-    // Use generic deployment method
-    emitProgress('🐳 Creating Docker volume for persistent data...', 'info')
-    emitProgress('📥 Pulling Docker image (this may take a moment)...', 'info')
-    
-    deploymentResult = await dockerService.deployService(serviceType, containerName, template, credentials)
-    
-    emitProgress('🔌 Configuring network and port mappings...', 'info')
-    emitProgress(`✅ ${serviceConfig.displayName} deployed successfully!`, 'success')
+    // Use generic deployment method with detailed progress tracking
+    deploymentResult = await dockerService.deployService(
+      serviceType, 
+      containerName, 
+      template, 
+      credentials, 
+      emitProgress // Pass progress callback
+    )
 
     emitProgress('🎉 Deployment completed! Service is ready to use.', 'success')
 

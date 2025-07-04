@@ -112,20 +112,61 @@ class DockerService {
     }
   }
 
-  async pullImageIfNotExists(imageName) {
+  async pullImageIfNotExists(imageName, progressCallback = null) {
     try {
       await this.docker.getImage(imageName).inspect()
       console.log(`Image ${imageName} already exists`)
+      if (progressCallback) {
+        progressCallback('📦 Docker image already exists locally', 'info')
+      }
     } catch (error) {
       console.log(`Pulling image ${imageName}...`)
+      if (progressCallback) {
+        progressCallback(`📥 Downloading Docker image: ${imageName}...`, 'info')
+      }
+      
       await new Promise((resolve, reject) => {
         this.docker.pull(imageName, (err, stream) => {
           if (err) return reject(err)
           
+          let lastProgress = {}
+          
           this.docker.modem.followProgress(stream, (err, res) => {
             if (err) return reject(err)
             console.log(`Successfully pulled ${imageName}`)
+            if (progressCallback) {
+              progressCallback(`✅ Docker image downloaded successfully`, 'success')
+            }
             resolve(res)
+          }, (event) => {
+            // Progress event handler for real-time updates
+            if (event && progressCallback) {
+              if (event.status === 'Downloading') {
+                const id = event.id || 'layer'
+                const progress = event.progressDetail
+                if (progress && progress.current && progress.total) {
+                  const percentage = Math.round((progress.current / progress.total) * 100)
+                  const currentMB = (progress.current / 1024 / 1024).toFixed(1)
+                  const totalMB = (progress.total / 1024 / 1024).toFixed(1)
+                  
+                  // Only send update if progress changed significantly (every 10%)
+                  const progressKey = `${id}-${Math.floor(percentage / 10) * 10}`
+                  if (!lastProgress[progressKey]) {
+                    lastProgress[progressKey] = true
+                    progressCallback(
+                      `📦 Downloading layer ${id}: ${percentage}% (${currentMB}/${totalMB} MB)`, 
+                      'info'
+                    )
+                  }
+                }
+              } else if (event.status === 'Extracting') {
+                const id = event.id || 'layer'
+                progressCallback(`🔄 Extracting layer ${id}...`, 'info')
+              } else if (event.status === 'Pull complete') {
+                const id = event.id || 'layer'
+                progressCallback(`✅ Layer ${id} completed`, 'info')
+              }
+            }
           })
         })
       })
@@ -336,7 +377,7 @@ class DockerService {
   }
 
   // Generic deployment method using ServiceRegistry
-  async deployService(serviceName, containerName, templateName, credentials = {}) {
+  async deployService(serviceName, containerName, templateName, credentials = {}, progressCallback = null) {
     try {
       const serviceConfig = serviceRegistry.getService(serviceName)
       if (!serviceConfig) {
@@ -348,22 +389,42 @@ class DockerService {
         throw new Error(`Template ${templateName} not found for service ${serviceName}`)
       }
 
+      if (progressCallback) {
+        progressCallback('🚀 Starting deployment process...', 'info')
+      }
+
       // Create volume for persistent data
       const volumeName = `${containerName}_data`
+      
+      if (progressCallback) {
+        progressCallback('📁 Creating Docker volume for persistent data...', 'info')
+      }
       
       try {
         await this.docker.createVolume({ Name: volumeName })
         console.log(`✅ Created volume: ${volumeName}`)
+        if (progressCallback) {
+          progressCallback(`✅ Volume created: ${volumeName}`, 'success')
+        }
       } catch (error) {
         if (error.statusCode === 409) {
           console.log(`📁 Volume ${volumeName} already exists`)
+          if (progressCallback) {
+            progressCallback(`📁 Volume already exists: ${volumeName}`, 'info')
+          }
         } else {
           throw error
         }
       }
 
       // Find an available port
+      if (progressCallback) {
+        progressCallback('🔍 Finding available port...', 'info')
+      }
       const availablePort = await this.findAvailablePort(serviceConfig.defaultPort)
+      if (progressCallback) {
+        progressCallback(`🔌 Port ${availablePort} assigned`, 'success')
+      }
       
       const createOptions = {
         Image: serviceConfig.image,
@@ -396,12 +457,24 @@ class DockerService {
         }
       }
 
-      // Pull image first
-      await this.pullImageIfNotExists(serviceConfig.image)
+      // Pull image first with progress tracking
+      await this.pullImageIfNotExists(serviceConfig.image, progressCallback)
 
       // Create and start container
+      if (progressCallback) {
+        progressCallback('🐳 Creating Docker container...', 'info')
+      }
       const container = await this.docker.createContainer(createOptions)
+      
+      if (progressCallback) {
+        progressCallback('▶️ Starting container...', 'info')
+      }
       await container.start()
+
+      if (progressCallback) {
+        progressCallback(`✅ ${serviceConfig.displayName} deployed successfully!`, 'success')
+        progressCallback(`🌐 Service available at: http://${this.getLocalIP()}:${availablePort}`, 'success')
+      }
 
       console.log(`✅ ${serviceConfig.displayName} deployed successfully on port ${availablePort}`)
 

@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ArrowLeft, Play, CheckCircle, AlertCircle, Clock, Zap, Database, Server, Globe, Shield } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
 import { api } from '../config/api'
+import { useSocket } from '../contexts/SocketContext'
 
 const DeployActivePieces = () => {
   const [selectedTemplate, setSelectedTemplate] = useState('basic')
@@ -10,6 +11,41 @@ const DeployActivePieces = () => {
   const [deploying, setDeploying] = useState(false)
   const [deploymentResult, setDeploymentResult] = useState(null)
   const [error, setError] = useState('')
+  const [deploymentProgress, setDeploymentProgress] = useState([])
+  const [currentDeploymentId, setCurrentDeploymentId] = useState(null)
+  const progressEndRef = useRef(null)
+  
+  const { socket } = useSocket()
+
+  // Auto-scroll to bottom when new progress is added
+  useEffect(() => {
+    if (progressEndRef.current) {
+      progressEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [deploymentProgress])
+
+  // Listen for deployment progress via Socket.IO
+  useEffect(() => {
+    if (!socket) return
+
+    const handleDeploymentProgress = (data) => {
+      // Only listen to progress for our current deployment
+      if (currentDeploymentId && data.deploymentId === currentDeploymentId) {
+        setDeploymentProgress(prev => [...prev, {
+          id: Date.now(),
+          message: data.step,
+          status: data.status,
+          timestamp: data.timestamp
+        }])
+      }
+    }
+
+    socket.on('deployment-progress', handleDeploymentProgress)
+
+    return () => {
+      socket.off('deployment-progress', handleDeploymentProgress)
+    }
+  }, [socket, currentDeploymentId])
 
   const templates = {
     basic: {
@@ -63,11 +99,18 @@ const DeployActivePieces = () => {
     setDeploying(true)
     setError('')
     setDeploymentResult(null)
+    setDeploymentProgress([])
+    
+    // Generate deployment ID for tracking
+    const deploymentId = `deploy-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    setCurrentDeploymentId(deploymentId)
 
     try {
-      const response = await axios.post(`${api.baseURL}/deploy/activepieces`, {
-        containerName: containerName.trim(),
-        template: selectedTemplate
+      const response = await axios.post(api.endpoints.deploy, {
+        serviceType: 'activepieces',
+        serviceName: containerName.trim(),
+        template: selectedTemplate,
+        deploymentId: deploymentId
       })
 
       setDeploymentResult(response.data)
@@ -76,6 +119,7 @@ const DeployActivePieces = () => {
       setError(error.response?.data?.message || 'Deployment failed. Please try again.')
     } finally {
       setDeploying(false)
+      setCurrentDeploymentId(null)
     }
   }
 
@@ -335,12 +379,48 @@ const DeployActivePieces = () => {
 
                 {deploying && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-center text-blue-700">
+                    <div className="flex items-center text-blue-700 mb-3">
                       <Clock className="w-5 h-5 mr-2" />
-                      <span className="text-sm">
+                      <span className="text-sm font-medium">
                         Deployment in progress... This may take a few minutes.
                       </span>
                     </div>
+                    
+                    {/* Progress Steps */}
+                    {deploymentProgress.length > 0 && (
+                      <div className="space-y-2 max-h-64 overflow-y-auto bg-white rounded border p-3">
+                        <h4 className="text-sm font-medium text-blue-800 mb-2 sticky top-0 bg-white">
+                          📋 Deployment Progress:
+                        </h4>
+                        {deploymentProgress.map((step) => (
+                          <div key={step.id} className="flex items-start space-x-2 text-sm py-1">
+                            <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                              step.status === 'success' ? 'bg-green-500' :
+                              step.status === 'error' ? 'bg-red-500' :
+                              'bg-blue-500'
+                            }`}></div>
+                            <div className="flex-1 min-w-0">
+                              <div className={`font-mono text-xs ${
+                                step.status === 'success' ? 'text-green-700' :
+                                step.status === 'error' ? 'text-red-700' :
+                                'text-blue-700'
+                              }`}>
+                                {step.message}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {new Date(step.timestamp).toLocaleTimeString()}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {/* Auto-scroll target */}
+                        <div ref={progressEndRef} className="animate-pulse flex items-center space-x-2 text-sm text-blue-600 py-2">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                          <span className="font-medium">Processing...</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
