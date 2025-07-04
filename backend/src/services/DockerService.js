@@ -174,7 +174,9 @@ class DockerService {
 
   async listServices() {
     try {
+      // Get ALL containers (running and stopped) with zapie.managed label
       const containers = await this.docker.listContainers({
+        all: true, // Include stopped containers
         filters: {
           label: ['zapie.managed=true']
         }
@@ -187,11 +189,24 @@ class DockerService {
           name: container.Names[0].replace('/', ''),
           image: container.Image,
           status: container.Status,
+          state: container.State, // Add state for better tracking
           created: container.Created,
           ports: container.Ports,
           url: port ? `http://${this.getLocalIP()}:${port}` : null,
-          labels: container.Labels
+          labels: container.Labels,
+          // Add more detailed status info
+          isRunning: container.State === 'running',
+          canStart: container.State === 'exited' || container.State === 'created',
+          canStop: container.State === 'running',
+          canRestart: container.State === 'running' || container.State === 'exited'
         }
+      }).sort((a, b) => {
+        // Sort by state (running first), then by creation time (newest first)
+        if (a.state !== b.state) {
+          if (a.state === 'running') return -1
+          if (b.state === 'running') return 1
+        }
+        return b.created - a.created
       })
     } catch (error) {
       console.error('Error listing services:', error)

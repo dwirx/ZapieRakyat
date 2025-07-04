@@ -56,7 +56,15 @@ class HealthMonitoringService {
         uptime: containerInfo.State.StartedAt,
         restartCount: containerInfo.RestartCount,
         exitCode: containerInfo.State.ExitCode,
-        pid: containerInfo.State.Pid
+        pid: containerInfo.State.Pid,
+        // Add more container state info
+        startedAt: containerInfo.State.StartedAt,
+        finishedAt: containerInfo.State.FinishedAt,
+        running: containerInfo.State.Running,
+        paused: containerInfo.State.Paused,
+        restarting: containerInfo.State.Restarting,
+        oomKilled: containerInfo.State.OOMKilled,
+        dead: containerInfo.State.Dead
       }
 
       // Get metrics if container is running
@@ -67,6 +75,14 @@ class HealthMonitoringService {
         } catch (err) {
           console.warn(`Failed to get stats for container ${containerId}:`, err.message)
         }
+      } else {
+        // For stopped containers, provide basic info
+        health.metrics = {
+          cpu: { percentage: 0, cores: 0 },
+          memory: { usage: 0, limit: 0, percentage: 0 },
+          network: { rxBytes: 0, txBytes: 0, totalBytes: 0 },
+          disk: { readBytes: 0, writeBytes: 0, totalBytes: 0 }
+        }
       }
 
       return health
@@ -75,7 +91,14 @@ class HealthMonitoringService {
       return {
         status: 'unreachable',
         lastCheck: new Date(),
-        error: error.message
+        error: error.message,
+        running: false,
+        metrics: {
+          cpu: { percentage: 0, cores: 0 },
+          memory: { usage: 0, limit: 0, percentage: 0 },
+          network: { rxBytes: 0, txBytes: 0, totalBytes: 0 },
+          disk: { readBytes: 0, writeBytes: 0, totalBytes: 0 }
+        }
       }
     }
   }
@@ -266,19 +289,40 @@ class HealthMonitoringService {
 
   async getAllServicesHealth() {
     try {
-      const containers = await this.docker.listContainers({ all: true })
-      const healthPromises = containers
-        .filter(container => container.Labels && container.Labels['zapie.managed'] === 'true')
-        .map(async (container) => {
-          const health = await this.getServiceHealth(container.Id)
-          return {
-            id: container.Id,
-            name: container.Names[0].replace('/', ''),
-            health: health
-          }
-        })
+      // Get ALL containers (running and stopped) with zapie.managed label
+      const containers = await this.docker.listContainers({ 
+        all: true, // This includes stopped containers
+        filters: {
+          label: ['zapie.managed=true']
+        }
+      })
+      
+      const healthPromises = containers.map(async (container) => {
+        const health = await this.getServiceHealth(container.Id)
+        return {
+          id: container.Id,
+          name: container.Names[0].replace('/', ''),
+          image: container.Image,
+          created: container.Created,
+          state: container.State,
+          status: container.Status,
+          health: health,
+          // Add container info for better tracking
+          labels: container.Labels || {},
+          ports: container.Ports || []
+        }
+      })
       
       const results = await Promise.all(healthPromises)
+      
+      // Sort by creation time (newest first) and then by name
+      results.sort((a, b) => {
+        if (a.created !== b.created) {
+          return b.created - a.created
+        }
+        return a.name.localeCompare(b.name)
+      })
+      
       return results
     } catch (error) {
       console.error('Failed to get all services health:', error.message)

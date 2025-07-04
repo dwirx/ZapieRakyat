@@ -47,8 +47,18 @@ const Services = () => {
       // Calculate stats
       const stats = {
         total: newServices.length,
-        running: newServices.filter(s => s.status.includes('Up')).length,
-        stopped: newServices.filter(s => !s.status.includes('Up')).length,
+        running: newServices.filter(s => 
+          s.status.includes('Up') || 
+          s.status.includes('running') || 
+          (s.state && s.state === 'running') ||
+          (s.isRunning === true)
+        ).length,
+        stopped: newServices.filter(s => 
+          !s.status.includes('Up') && 
+          !s.status.includes('running') && 
+          (s.state !== 'running') &&
+          (s.isRunning !== true)
+        ).length,
         totalMemory: calculateTotalMemory(newServices),
         avgUptime: calculateAvgUptime(newServices)
       }
@@ -75,7 +85,12 @@ const Services = () => {
   }
 
   const calculateAvgUptime = (services) => {
-    const runningServices = services.filter(s => s.status.includes('Up'))
+    const runningServices = services.filter(s => 
+      s.status.includes('Up') || 
+      s.status.includes('running') || 
+      (s.state && s.state === 'running') ||
+      (s.isRunning === true)
+    )
     if (runningServices.length === 0) return 0
     
     const totalUptime = runningServices.reduce((total, service) => {
@@ -109,9 +124,19 @@ const Services = () => {
     // Filter by status
     if (statusFilter !== 'all') {
       if (statusFilter === 'running') {
-        filtered = filtered.filter(s => s.status.includes('Up'))
+        filtered = filtered.filter(s => 
+          s.status.includes('Up') || 
+          s.status.includes('running') || 
+          (s.state && s.state === 'running') ||
+          (s.isRunning === true)
+        )
       } else if (statusFilter === 'stopped') {
-        filtered = filtered.filter(s => !s.status.includes('Up'))
+        filtered = filtered.filter(s => 
+          !s.status.includes('Up') && 
+          !s.status.includes('running') && 
+          (s.state !== 'running') &&
+          (s.isRunning !== true)
+        )
       }
     }
 
@@ -180,7 +205,12 @@ const Services = () => {
   }
 
   const getServiceHealth = (service) => {
-    if (service.status.includes('Up')) {
+    const isRunning = service.status.includes('Up') || 
+                     service.status.includes('running') || 
+                     (service.state && service.state === 'running') ||
+                     (service.isRunning === true)
+    
+    if (isRunning) {
       const uptime = Date.now() - (service.created * 1000)
       const hours = uptime / (1000 * 60 * 60)
       
@@ -188,6 +218,12 @@ const Services = () => {
       if (hours > 1) return { status: 'good', color: 'blue', text: 'Good' }
       return { status: 'starting', color: 'yellow', text: 'Starting' }
     }
+    
+    // Check if it's paused, restarting, or other states
+    if (service.status.includes('paused')) return { status: 'paused', color: 'orange', text: 'Paused' }
+    if (service.status.includes('restarting')) return { status: 'restarting', color: 'blue', text: 'Restarting' }
+    if (service.status.includes('dead')) return { status: 'dead', color: 'gray', text: 'Dead' }
+    
     return { status: 'stopped', color: 'red', text: 'Stopped' }
   }
 
@@ -257,6 +293,9 @@ const Services = () => {
   const getStatusColor = (status) => {
     if (status.includes('running') || status.includes('Up')) return 'text-green-600 bg-green-100'
     if (status.includes('exited') || status.includes('stopped')) return 'text-red-600 bg-red-100'
+    if (status.includes('paused')) return 'text-orange-600 bg-orange-100'
+    if (status.includes('restarting')) return 'text-blue-600 bg-blue-100'
+    if (status.includes('dead')) return 'text-gray-600 bg-gray-100'
     return 'text-yellow-600 bg-yellow-100'
   }
 
@@ -563,7 +602,11 @@ const Services = () => {
                 {/* Action Buttons */}
                 <div className="px-6 py-4 bg-gray-50 border-b border-gray-100">
                   <div className="flex flex-wrap gap-2">
-                    {service.status.includes('Up') ? (
+                    {/* Show Stop button if container is running */}
+                    {(service.status.includes('Up') || 
+                      service.status.includes('running') || 
+                      (service.state && service.state === 'running') ||
+                      (service.isRunning === true)) ? (
                       <button
                         onClick={() => handleAction(service.id, 'stop', serviceName)}
                         disabled={actionLoading === `${service.id}-stop`}
@@ -577,6 +620,7 @@ const Services = () => {
                         Stop
                       </button>
                     ) : (
+                      /* Show Start button if container is stopped */
                       <button
                         onClick={() => handleAction(service.id, 'start', serviceName)}
                         disabled={actionLoading === `${service.id}-start`}
